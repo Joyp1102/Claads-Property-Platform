@@ -1,0 +1,43 @@
+services:
+  web:
+    build: .
+    ports:
+      - "8080:80"
+    environment:
+      APP_ENV: development
+      APP_URL: http://localhost:8080
+      APP_KEY: local-development-key-change-before-deploying
+      IMPORT_API_KEY: local-import-key-change-before-deploying
+      DB_DSN: mysql:host=db;port=3306;dbname=claads;charset=utf8mb4
+      DB_USER: claads
+      DB_PASSWORD: claads_secret
+      OTP_DRIVER: log
+    volumes:
+      - claads_uploads:/var/www/html/public/uploads
+      - claads_logs:/var/www/html/storage/logs
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: claads
+      MYSQL_USER: claads
+      MYSQL_PASSWORD: claads_secret
+      MYSQL_ROOT_PASSWORD: local_root_secret
+    ports:
+      - "3307:3306"
+    volumes:
+      - claads_mysql:/var/lib/mysql
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-plocal_root_secret"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  claads_mysql:
+  claads_uploads:
+  claads_logs:
